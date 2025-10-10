@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Duel Cerdas Radit vs Najla</title>
+    <link rel="stylesheet" href="style.css"> </head>
+<body>
+    <div id="game-container">
+        <div class="player-area" id="radit-area">
+            <h2>RADIT</h2>
+            <div class="health-bar-container">
+                <div id="radit-hp" class="health-bar" style="width: 100%;"></div>
+            </div>
+            <p>HP: <span id="radit-hp-text">100</span></p>
+        </div>
+
+        <div id="center-area">
+            <div id="message-log">Giliran Radit!</div>
+            <div id="action-buttons">
+                </div>
+        </div>
+
+        <div class="player-area" id="najla-area">
+            <h2>NAJLA</h2>
+            <div class="health-bar-container">
+                <div id="najla-hp" class="health-bar" style="width: 100%;"></div>
+            </div>
+            <p>HP: <span id="najla-hp-text">100</span></p>
+        </div>
+    </div>
+
+    <script src="game.js"></script> </body>
+</html>
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    margin: 0;
+}
+
+#game-container {
+    display: flex;
+    width: 800px;
+    border: 3px solid #333;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Area Pemain */
+.player-area {
+    width: 30%;
+    text-align: center;
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+/* Health Bar Styling */
+.health-bar-container {
+    width: 100%;
+    height: 20px;
+    background-color: #ddd;
+    border: 1px solid #666;
+    margin-bottom: 5px;
+}
+
+.health-bar {
+    height: 100%;
+    background-color: #4CAF50; /* Hijau untuk HP penuh */
+    transition: width 0.5s; /* Animasi perubahan HP */
+}
+
+/* Area Tengah */
+#center-area {
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 10px;
+}
+
+#message-log {
+    border: 1px solid #333;
+    padding: 10px;
+    height: 50px;
+    text-align: center;
+    width: 90%;
+}
+
+#action-buttons button {
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+}
+// --- 1. DATA GAME INTI ---
+let gameState = {
+    raditHP: 100,
+    najlaHP: 100,
+    turn: 'radit', // Mulai dengan Radit
+    isGameOver: false
+};
+
+// Definisi Aksi/Kartu
+const actions = {
+    // Aksi Radit
+    'radit': [
+        { name: 'Analisis Data', damage: 15 },
+        { name: 'Punchline Komedi', damage: 10 },
+        { name: 'Kritik Sosial', damage: 25 }
+    ],
+    // Aksi Najla
+    'najla': [
+        { name: 'Fakta Hukum', damage: 15 },
+        { name: 'Pertanyaan Menggugat', damage: 10 },
+        { name: 'Retorika Tajam', damage: 25 }
+    ]
+};
+
+// --- 2. FUNGSI UTAMA ---
+
+/** Memperbarui tampilan HP dan bar HP di HTML/CSS */
+function updateDisplay() {
+    // Radit
+    document.getElementById('radit-hp-text').textContent = gameState.raditHP;
+    document.getElementById('radit-hp').style.width = `${gameState.raditHP}%`;
+    document.getElementById('radit-hp').style.backgroundColor = (gameState.raditHP > 30) ? '#4CAF50' : '#FF5733'; // Ganti warna saat HP rendah
+
+    // Najla
+    document.getElementById('najla-hp-text').textContent = gameState.najlaHP;
+    document.getElementById('najla-hp').style.width = `${gameState.najlaHP}%`;
+    document.getElementById('najla-hp').style.backgroundColor = (gameState.najlaHP > 30) ? '#4CAF50' : '#FF5733';
+}
+
+/** Menghasilkan tombol aksi untuk pemain yang sedang giliran */
+function renderActionButtons() {
+    const buttonContainer = document.getElementById('action-buttons');
+    buttonContainer.innerHTML = ''; // Bersihkan tombol lama
+    
+    if (gameState.isGameOver) return; // Jangan tampilkan tombol jika game berakhir
+
+    const currentActions = actions[gameState.turn];
+    currentActions.forEach(action => {
+        const button = document.createElement('button');
+        button.textContent = `${action.name} (-${action.damage})`;
+        button.onclick = () => handleAction(action); // Pasang event handler
+        buttonContainer.appendChild(button);
+    });
+}
+
+/** Logika saat sebuah aksi diklik (Kartu digunakan) */
+function handleAction(action) {
+    if (gameState.isGameOver) return;
+
+    const attacker = gameState.turn;
+    const defender = (attacker === 'radit') ? 'najla' : 'radit';
+    
+    // Kurangi HP lawan
+    if (defender === 'najla') {
+        gameState.najlaHP -= action.damage;
+        gameState.najlaHP = Math.max(0, gameState.najlaHP); // Pastikan HP tidak negatif
+    } else {
+        gameState.raditHP -= action.damage;
+        gameState.raditHP = Math.max(0, gameState.raditHP);
+    }
+    
+    // Tampilkan pesan
+    document.getElementById('message-log').textContent = 
+        `${attacker.toUpperCase()} menggunakan "${action.name}", Najla terkena ${action.damage} damage!`; // Sesuaikan jika penyerang Najla
+
+    updateDisplay();
+    checkGameOver();
+
+    // Ganti giliran jika game belum berakhir
+    if (!gameState.isGameOver) {
+        switchTurn();
+    }
+}
+
+/** Mengganti giliran pemain */
+function switchTurn() {
+    gameState.turn = (gameState.turn === 'radit') ? 'najla' : 'radit';
+    document.getElementById('message-log').textContent = `Giliran ${gameState.turn.toUpperCase()}!`;
+    renderActionButtons();
+}
+
+/** Cek kondisi kemenangan/kekalahan */
+function checkGameOver() {
+    if (gameState.najlaHP <= 0) {
+        document.getElementById('message-log').textContent = 'RADIT MENANG! Argumen Najla Tumbang.';
+        gameState.isGameOver = true;
+    } else if (gameState.raditHP <= 0) {
+        document.getElementById('message-log').textContent = 'NAJLA MENANG! Radit tidak berkutik.';
+        gameState.isGameOver = true;
+    }
+}
+
+
+// --- 3. INISIALISASI GAME ---
+document.addEventListener('DOMContentLoaded', () => {
+    updateDisplay();
+    renderActionButtons();
+});
